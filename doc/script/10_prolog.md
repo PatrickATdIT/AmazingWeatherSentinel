@@ -31,4 +31,4 @@ fundierten Kenntnissen der SOLID-Prinzipien und einem für das Unternehmen äuß
 diese neue Führungskraft nun die alleinige Verantwortung, den AWSentinel durch eine architektonische Neuausrichtung vor
 dem softwaretechnischen Kollaps zu bewahren.
 
-[zurück](../script.md)
+[Inhalt](../script.md) | [Nächstes Kapitel](20_vorbereitung.md)
