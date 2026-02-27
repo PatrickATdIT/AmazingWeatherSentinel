@@ -8,15 +8,13 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
-import java.util.LinkedList;
-import java.util.List;
 
 
 public class Sentinel {
 
   private static final Logger log = LoggerFactory.getLogger( Sentinel.class );
 
-  public static void main( String[] args ) throws AWTException {
+  static void main( ) throws AWTException {
     log.info( "Starting Amazing Weather Sentinel" );
 
     // get WeatherOracle service
