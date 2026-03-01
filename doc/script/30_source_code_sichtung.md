@@ -66,7 +66,7 @@ testbar ist. Denn damit haben Sie bewusst oder unbewusst die Abwesenheit grundle
 wir im weiteren Verlauf eingehen werden. Übrigens: Die potenzielle NullPointerException und den Bug bei der
 Windgeschwindigkeitsabfrage würden von sorgfältig erstellten Unittests erkannt werden.
 
-Aber warum ist das Nichteinhalten dieser Kriterien denn überhaupt ein Problem?
+**Aber warum ist das Nichteinhalten dieser Kriterien denn überhaupt ein Problem?**
 
 Aufgrund der Größe der Methode geht die Übersicht verloren, was den Code schwer verständlich erscheinen lässt.
 Bevor Sie diese Aussage anzweifeln und argumentieren, dass der Code doch sehr wohl übersichtlich und leicht verständlich
