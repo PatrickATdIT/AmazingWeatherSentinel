@@ -2,13 +2,11 @@
 
 Robert C. Martin definiert das SRP nicht einfach über die Anzahl der Aufgaben, sondern über die Zuständigkeit: Eine
 Klasse sollte nur einen einzigen Grund haben, sich zu ändern. Ein Grund kann technisch bedingt sein, etwa abgeleitet aus
-den Softwareebenen (z.B. UI, Prozesslogik, Persistenz), oder logisch durch Prozessänderungen. Diese möglichen Gründe
-frühzeitig zu erkennen, ist der Schlüssel zu einem guten, dem SRP-konformen Design, in dem Verantwortlichkeiten durch
+den Softwareebenen (z. B. UI, Prozesslogik, Persistenz), oder logisch durch Prozessänderungen. Diese möglichen Gründe
+frühzeitig zu erkennen, ist der Schlüssel zu einem guten, SRP-konformen Design, in dem Verantwortlichkeiten durch
 Dekomposition klar voneinander getrennt sind und eine hohe Kohäsion besteht.
 
-Betrachten Sie noch einmal die Sentinel-Klasse in Version
-
-1. Welche Zuständigkeiten hat sie?
+Betrachten Sie noch einmal die Sentinel-Klasse in Version 1. Welche Zuständigkeiten hat sie?
 
 ```java
 public class Sentinel {
@@ -48,16 +46,17 @@ public class Sentinel {
 Offensichtlich ist zunächst, dass der Sentinel den Prozess des Erstellens eines Wetterreports oder einer Wetterwarnung
 implementiert. Außerdem agiert die Klasse als Einstiegspunkt für die Applikation. Das wird tatsächlich erst später ein
 SRP-Problem, wenn wir uns mit Dependency Inversion und Dependency Injection beschäftigen, denn üblicherweise ist die
-Einstiegsklasse auch die Composition Root-Klasse. Folgen Sie weiterhin den Kommentaren in der Klasse, erkennen Sie, dass
-die Sentinel-Klasse noch weitere Zuständigkeiten hat. Zusammengefasst:
+Einstiegsklasse auch die Composition Root. Folgen Sie weiterhin den Kommentaren in der Klasse, erkennen Sie, dass die
+Sentinel-Klasse noch weitere Zuständigkeiten hat. Zusammengefasst:
 
 * Die Klasse agiert als Einstiegspunkt in die Applikation UND
 * sie implementiert den Prozess, einen Wetterbericht zu erstellen UND
 * sie implementiert Regeln, die zu einer Wetterwarnung führen UND
-* sie erzeugt ein Ausgabeformat für die potenzielle Wetterwarnung UND
-* sie entscheidet zusätzlich über den zu nutzenden Wetterservice.
+* sie erzeugt ein Ausgabeformat für die potenzielle Wetterwarnung.
 
-Ändert sich also einer dieser Aspekte, bedingt dies eine Änderung der Klasse. Die Klasse hat also mindestens fünf
+Das einzige Aufgabe, die Sie nicht übernimmt, ist die Wettervorschau. Das macht das `WeatherOracle`.
+
+Ändert sich also einer dieser Aspekte, bedingt dies eine Änderung der Klasse. Die Klasse hat also mindestens vier
 Gründe, sich zu ändern. Diese könnten sein:
 
 | Aspekt         | Anforderung                               |
@@ -66,9 +65,8 @@ Gründe, sich zu ändern. Diese könnten sein:
 | Prozess        | Zusätzliche Benachrichtigungen per E-Mail |
 | Regeln         | Temperaturwarnung                         |
 | Ausgabe        | Anderes UI-Framework                      |
-| Wetterservice  | Ein anderer Service                       |
 
-Die Umsetzung solcher Änderungsgründe kann, bedingt durch die schlechte Trennung der Zuständigkeiten, zu ungewollten
+Die Umsetzung solcher Änderungen kann, bedingt durch die schlechte Trennung der Zuständigkeiten, zu ungewollten
 Seiteneffekten führen und das Programm korrumpieren.
 
 Um dies zu vermeiden, müssen die Zuständigkeiten neu geregelt werden. Dies geschieht über die Herausbildung neuer
@@ -76,8 +74,9 @@ Klassen, also Dekomposition. Alle Methoden und Felder innerhalb von Klassen soll
 Kohäsion) und an demselben Ziel arbeiten. Wenn eine Klasse nur für eine Sache zuständig ist, hängen andere Systemteile
 auch nur von dieser spezifischen Funktionalität ab. Schauen Sie daher auch von der anderen Seite auf die Klasse: Was
 will ein Konsument von der Klasse? Die Konsumentensicht erleichtert auch die Einhaltung der anderen SOLID-Kriterien.
+
 Ein Hilfsmittel beim Refactoring ist es, die Aufgabe der Klasse zu beschreiben. Die Beschreibung sollte unter keinen
-Umständen ein "Und" enthalten. Tut sie das, ist das SRP mit hoher Wahrscheinlichkeit verletzt. Vergleichen Sie dazu auch
+Umständen ein „und“ enthalten. Tut sie das, ist das SRP mit hoher Wahrscheinlichkeit verletzt. Vergleichen Sie dazu auch
 noch einmal die Ausführungen oben.
 
 ### Aufgabe
@@ -94,14 +93,47 @@ herausgelöst werden. Dabei ist das Ziel, dass der Sentinel nur noch den Prozess
 2. Windgeschwindigkeit prüfen
 3. Wetterbericht absenden
 
-Beginnen wir mit dem Wetterbericht bzw. der Wetterwarnung. Diese erfolgt über ein TrayIcon und das Meldungssystem des
-Betriebssystems. Die Instanziierung erfolgt mitten im Prozess, eine Meldung wird nur nach erfolgreicher Prüfung auf eine
-Windwarnung ausgegeben (über `trayIcon#displayMessage(...)`). Dies sollte dringend extrahiert werden, und zwar in eine
-neue Klasse `BalloonWarning`.
-Die Erstellung des TrayIcons kann bereits im Konstruktor erfolgen. Kann das TrayIcon nicht erstellt werden, wird eine
-AWTException geloggt und als Runtime-Exception propagiert, was zum Programmabbruch führen wird – ein hier gewolltes
-Verhalten, da das ganze Programm an dem TrayIcon hängt (zumindest noch).
-Zentral ist die Methode `issue( String message )`, die eine Meldung ans System sendet.
+Der Wetterservice an sich ist schon gut abstrahiert, sogar mit Schnittstelle. Da es sich hier um eine externe Bibliothek
+handelt, gibt es aktuell nichts zu tun.
+
+Schauen wir als nächstes auf die Prüfung, ob eine Wetterwarnung ob des Windes angebracht ist oder nicht. Die Prüfung
+soll natürlich aus dem Sentinel verschwinden und extern aufgehängt werden, nämlich in der Klasse `WindCheck`. Diese
+bietet die Methode `String checkWind(int wind)` an, die eine Windgeschwindigkeit entgegennimmt und eine Meldung
+zurückliefert. Der `WindCheck` kümmert sich also allein um die Prüfung auf eine Windwarnung.  
+Mit dem `WindCheck` erfährt das Gesamtkonstrukt gleichzeitig noch eine Feature-Erweiterung, sodass sie nicht nur bei
+einer Windwarnung eine Meldung zurückliefert, sondern auch, wenn sich der Wind im Rahmen befindet. Das ist ein Detail,
+um die weitere Verarbeitung im UI zu vereinheitlichen. Man hätte alternativ auch einfach `null` zurückliefern oder mit
+Exceptions arbeiten können, wenn man keine OK-Meldung zurückliefern möchte.
+
+```java
+public class WindCheck {
+  private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );
+
+  public String checkWind( int wind ) {
+    String result;
+    if( wind > 40 ) {
+      result = "Wind warning: %d km/h".formatted( wind );
+    } else {
+      result = "Wind within limits: %d km/h".formatted( wind );
+    }
+    log.info( result );
+    return result;
+  }
+}
+```
+
+Bleibt noch die Warnung selbst, das Modul, dass die Meldung an den Benutzer übermittelt. Diese erfolgt bereits über ein
+`TrayIcon` und das Meldungssystem des Betriebssystems. Die Instanziierung erfolgt mitten im Prozess, eine Meldung wird
+nur nach erfolgreicher Prüfung auf eine Windwarnung ausgegeben (über `trayIcon#displayMessage(...)`). Dies sollte
+dringend extrahiert werden, und zwar in eine neue Klasse `BalloonWarning`. Positiver Nebeneffekt: Da die Meldung auf dem
+AWT basiert, wird durch die Dekomposition das UI-Framework vom Rest der Anwendung isoliert. Änderungen an der grafischen
+Darstellung betreffen somit nur noch diese eine Klasse, was bedeutet, dass auch das ganze Grafikframework ausgetauscht
+werden kann, ohne andere Klassen anfassen zu müssen (zumindest theoretisch, einige Frameworks erfordern aber mehr
+Anpassungen, JavaFX zum Beispiel).  
+Die Erstellung des `TrayIcons` kann bereits im Konstruktor erfolgen. Kann das `TrayIcon` nicht erstellt werden, wird
+eine `AWTException` geloggt und als `RuntimeException` propagiert, was zum Programmabbruch führen wird – ein hier
+gewolltes Verhalten, da das gesamte Programm an dem `TrayIcon` hängt (zumindest noch). Zentral ist die Methode
+`issue(String message)`, die eine Meldung ans System sendet.
 
 ```java
 public class BalloonWarning {
@@ -143,69 +175,20 @@ public class BalloonWarning {
 }
 ```
 
-Der Wetterservice an sich ist schon gut abstrahiert, sogar mit Schnittstelle, allerdings obliegt es noch dem Sentinel,
-die Verbindung herzustellen, das heißt, er entscheidet selbst über die Implementierung. Das könnte man sogar erst einmal
-so lassen, um SRP-konform zu sein, das betrachtet aber noch nicht die anderen Prinzipien wie das DIP. In weiser
-Voraussicht auf eben jene anderen Prinzipien, insbesondere das Dependency-Inversion-Prinzip, und weil die
-Sentinel-Klasse hier als Fabrik für die Erstellung der Serviceverbindung agiert und damit gegen das SRP verstößt, soll
-die Wetterserviceanbindung und -kommunikation dennoch in eine neue Klasse `WeatherService` ausgelagert werden. Diese
-dient hauptsächlich als Delegator an das WeatherOracle. Die Verbindung wird im Konstruktor hergestellt und die Abfrage
-erfolgt durch `getWind()`.
-
-```java
-public class WeatherService {
-  private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );
-  private final WeatherOracle weatherOracle;
-
-  public WeatherService( ) {
-    log.info( "Connecting to WeatherOracle Service" );
-    weatherOracle = new WeatherOracleFactoryProduction( ).get( );
-  }
-
-  public int getWind( ) {
-    return weatherOracle.getWind( );
-  }
-}
-```
-
-Bleibt noch die Prüfung auf die Windwarnung. Auch diese soll extern aufgehängt werden, nämlich in der Klasse
-`WindCheck`. Diese soll die Methode `String checkWind( int wind )` anbieten, die eine Windgeschwindigkeit entgegennimmt
-und eine Meldung zurückliefert. Der `WindCheck` kümmert sich also allein um die Prüfung auf eine Windwarnung. Die
-Methode `checkWind( int wind )` erfährt gleichzeitig noch eine Featureerweiterung, sodass sie nicht nur bei einer
-Windwarnung eine Meldung zurückliefert, sondern auch, wenn sich der Wind im Rahmen befindet. Das ist ein Detail, zu dem
-ich mich spontan entschieden habe; man hätte alternativ auch null zurückliefern können, falls keine Warnung besteht,
-oder mit Ausnahmen arbeiten können.
-
-```java
-public class WindCheck {
-  private static final Logger log = Logger.getLogger( MethodHandles.lookup( ).lookupClass( ).getName( ) );
-
-  public String checkWind( int wind ) {
-    String result;
-    if( wind > 40 ) {
-      result = "Wind warning: %d km/h".formatted( wind );
-    } else {
-      result = "Wind within limits: %d km/h".formatted( wind );
-    }
-    log.info( result );
-    return result;
-  }
-}
-```
-
-Der Sentinel selbst führt nur noch den Prozess aus über seine Methode `run()`. Die Abhängigkeiten erzeugt er nicht mehr
-während des Prozesses, sondern zur Konstruktionszeit im Konstruktor (was ein neues Problem darstellt, das wir später
+Der Sentinel selbst führt nur noch den Prozess über seine Methode `run()` aus. Die Abhängigkeiten erzeugt er nicht mehr
+während der Prozessausführung, sondern zur Konstruktionszeit im Konstruktor (was ein neues Problem darstellt, das wir
+später
 lösen werden).
 
 ```java
 public class Sentinel {
   private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
-  private final WeatherService weatherService;
+  private final WeatherOracle weatherService;
   private final BalloonWarning balloonWarning;
   private final WindCheck windCheck;
 
   public Sentinel( ) {
-    weatherService = new WeatherService( );
+    weatherService = new WeatherOracleFactoryProduction( ).get( );
     balloonWarning = new BalloonWarning( );
     windCheck = new WindCheck( );
   }
@@ -219,7 +202,7 @@ public class Sentinel {
 }
 ```
 
-Auffällig ist, dass die Main-Methode fehlt. Diese wurde in die Klasse `Main` ausgelagert. Aktuell macht diese Klasse
+Auffällig ist, dass die `main`-Methode fehlt. Diese wurde in die Klasse `Main` ausgelagert. Aktuell macht diese Klasse
 noch nichts anderes, als den Sentinel laufen zu lassen.
 
 ```java
@@ -234,23 +217,38 @@ public class Main {
 }
 ```
 
-Im Endergebnis sind die Verantwortlichkeiten nun klar getrennt (man beachte: kein "Und", weder im Namen noch in der
+Im Endergebnis sind die Verantwortlichkeiten nun klar getrennt (man beachte: kein „und“, weder im Namen noch in der
 Beschreibung).
 
-| Klasse         | Verantwortung                               |
-|:---------------|:--------------------------------------------|
-| Main           | Einstieg                                    |
-| Sentinel       | Prozessierung                               |
-| WeatherService | Kommunikation mit dem WeatherOracle-Service |
-| WindCheck      | Prüfung auf Windwarnung                     |
-| BalloonWarning | Meldungsausgabe                             |
+| Klasse                            | Verantwortung                               |
+|:----------------------------------|:--------------------------------------------|
+| Main                              | Einstieg                                    |
+| Sentinel                          | Prozessierung                               |
+| WeatherOracle (externer Anbieter) | Kommunikation mit dem WeatherOracle-Service |
+| WindCheck                         | Prüfung auf Windwarnung                     |
+| BalloonWarning                    | Meldungsausgabe                             |
 
-Die Musterlösung finden Sie im Modul *version2*.
+Die Musterlösung finden Sie im Modul `version2`.
 
-Allein mit dieser Trennung ist es nun einfach möglich, einfache und fokussierte Tests für die einzelnen Klassen zu
-schreiben. Dies soll hier aber nicht geschehen.
-Die Tests würden auch noch nicht in allen Fällen der Definition von Unittests genügen, da zumindest der Sentinel und der
-WeatherService starke Abhängigkeiten aufweisen, die auch mit unserer Codeänderung nicht aufgelöst werden können. Was
-damit gemeint ist und wie wir dieses Problem lösen, besprechen wir im nächsten Kapitel.
+Schauen Sie auf das Ergebnis. Sie werden wahrscheinlich kritisieren, dass wir jetzt statt einer Klasse und 31 Zeilen
+Code ganze fünf Klassen und sage und schreibe 73 Codezeilen haben. Unsere Codebasis hat sich also mehr als Verdoppelt.
+Warum ist diese Änderung trotzdem vorteilhaft?
+
+Es wirkt paradox, ist es aber nicht: Ein Teil der Codezeilen ist trivialer Boilerplate-Code, wie Klassen- und
+Methodendefinitionen. Zudem ist die Codebase aktuell noch sehr klein. In einem echten Projekt wäre der Effekt prozentual
+viel geringer, da das Verhältnis von funktionalem Code zu Boilerplate wächst.
+
+Tatsächlich ist eine größere Codebase jedoch nicht schwerer zu pflegen. Die Struktur, die wir erzeugt haben, vereinfacht
+sowohl Wartung als auch Neuentwicklungen. Wo vorher 31 Zeilen im Zusammenhang verstanden werden mussten, muss bei der
+nächsten Änderung wahrscheinlich nur noch ein kleiner, isolierter Teil untersucht werden. Das führt zu einer deutlichen
+kognitiven Entlastung der Entwickler. Weiterhin sinkt die Chance auf ungewollte Seiteneffekte und Regressionen, da
+Änderungen in der Regel eindeutig lokalisierbar sind.
+
+Das wichtigste Argument ist jedoch die Testbarkeit. Allein durch die Neuordnung der Verantwortungsbereiche ist es nun
+möglich, einfache, fokussierte Tests für die einzelnen Klassen zu schreiben. Vorher konnte nur der gesamte Prozess
+getestet werden. Auf diese Unittests werden wir hier jedoch nicht im Detail eingehen. Die Tests, die Sie jetzt schreiben
+könnten, würden zudem noch nicht in allen Fällen der Definition von Unittests genügen, da zumindest der `Sentinel` noch
+starke Abhängigkeiten aufweist, die mit unserer Codeänderung mitnichten aufgelöst sind. Was damit gemeint ist und wie
+wir dieses Problem lösen, besprechen wir im nächsten Kapitel.
 
 [Inhalt](../script.md) | [Nächstes Kapitel](60_dip.md)

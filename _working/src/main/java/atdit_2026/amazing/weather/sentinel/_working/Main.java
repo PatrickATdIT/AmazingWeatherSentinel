@@ -1,5 +1,6 @@
 package atdit_2026.amazing.weather.sentinel._working;
 
+import atdit_2026.weather.oracle.WeatherOracleFactoryProduction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +11,10 @@ public class Main {
 
   static void main( ) {
     log.info( "Starting Amazing Weather Sentinel" );
-    var sentinel = new Sentinel( );
+    var sentinel = new Sentinel(
+      new WeatherOracleFactoryProduction( ).get( ),
+      new TrayReport( ),
+      new WindCheck( ) );
     sentinel.run( );
   }
 }

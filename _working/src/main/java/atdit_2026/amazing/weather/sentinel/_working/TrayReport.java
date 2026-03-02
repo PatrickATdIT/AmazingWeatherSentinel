@@ -8,11 +8,11 @@ import java.awt.*;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 
-public class BalloonWarning {
+public class TrayReport implements WeatherReport {
   private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
   private final TrayIcon trayIcon;
 
-  public BalloonWarning( ) {
+  public TrayReport( ) {
     try {
       log.debug( "preparing tray for balloon message display" );
       trayIcon = makeTrayIcon( );
@@ -23,7 +23,12 @@ public class BalloonWarning {
     }
   }
 
-  public void issue( String message ) {
+  @Override
+  public void report( String message ) {
+    issue( message );
+  }
+
+  private void issue( String message ) {
     log.debug( "issuing balloon warning message" );
     log.debug( "message: {}", message );
     trayIcon.displayMessage( "Weather Report", message, TrayIcon.MessageType.INFO );

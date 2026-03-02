@@ -1,5 +1,7 @@
 package atdit_2026.amazing.weather.sentinel.version2;
 
+import atdit_2026.weather.oracle.WeatherOracle;
+import atdit_2026.weather.oracle.WeatherOracleFactoryProduction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,12 +10,12 @@ import java.lang.invoke.MethodHandles;
 
 public class Sentinel {
   private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
-  private final WeatherService weatherService;
+  private final WeatherOracle weatherService;
   private final BalloonWarning balloonWarning;
   private final WindCheck windCheck;
 
   public Sentinel( ) {
-    weatherService = new WeatherService( );
+    weatherService = new WeatherOracleFactoryProduction( ).get( );
     balloonWarning = new BalloonWarning( );
     windCheck = new WindCheck( );
   }
