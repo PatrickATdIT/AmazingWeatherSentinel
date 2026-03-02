@@ -8,28 +8,20 @@ import java.lang.invoke.MethodHandles;
 
 public class Sentinel {
   private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
-  private final WeatherService WeatherService;
+  private final WeatherService weatherService;
   private final BalloonWarning balloonWarning;
+  private final WindCheck windCheck;
 
   public Sentinel( ) {
-    WeatherService = new WeatherService( );
+    weatherService = new WeatherService( );
     balloonWarning = new BalloonWarning( );
+    windCheck = new WindCheck( );
   }
 
   public void run( ) {
-    log.debug( "Check for wind warning" );
-    var wind = WeatherService.getWind( );
-
-    if( wind > 40 ) {
-      log.info( "Wind warning identified: {} km/h", wind );
-      String windWarning = "Wind: %d km/h".formatted( wind );
-      log.debug( "displaying wind warning message" );
-      balloonWarning.issue( "Wind Warning", windWarning, BalloonWarning.MessageType.WARNING );
-    } else {
-      log.info( "Wind within limits: {} km/h", wind );
-      String windMessage = "Wind: %d km/h".formatted( wind );
-      log.debug( "displaying wind message" );
-      balloonWarning.issue( "Weather within limits", windMessage, BalloonWarning.MessageType.INFO );
-    }
+    log.debug( "Creating Weather Report" );
+    var wind = weatherService.getWind( );
+    String message = windCheck.checkWind( wind );
+    balloonWarning.issue( message );
   }
 }

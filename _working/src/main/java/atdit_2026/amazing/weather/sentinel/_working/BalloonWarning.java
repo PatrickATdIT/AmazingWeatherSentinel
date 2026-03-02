@@ -9,21 +9,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 
 public class BalloonWarning {
-  public enum MessageType {
-    INFO( TrayIcon.MessageType.INFO ),
-    WARNING( TrayIcon.MessageType.WARNING );
-
-    private final TrayIcon.MessageType messageType;
-
-    MessageType( TrayIcon.MessageType messageType ) {
-      this.messageType = messageType;
-    }
-
-    private TrayIcon.MessageType getMessageType( ) {
-      return messageType;
-    }
-  }
-
   private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
   private final TrayIcon trayIcon;
 
@@ -38,12 +23,10 @@ public class BalloonWarning {
     }
   }
 
-  public void issue( String caption, String message, MessageType messageType ) {
+  public void issue( String message ) {
     log.debug( "issuing balloon warning message" );
-    log.debug( "caption: {}", caption );
     log.debug( "message: {}", message );
-    log.debug( "messageType: {}", messageType.name( ) );
-    trayIcon.displayMessage( caption, message, messageType.getMessageType( ) );
+    trayIcon.displayMessage( "Weather Report", message, TrayIcon.MessageType.INFO );
   }
 
   private TrayIcon makeTrayIcon( ) {
