@@ -281,17 +281,106 @@ public class Main {
 ```
 
 Und damit hat die Software Elon Bezos wieder an Qualität gewonnen. Denn nunmehr können wir alles unittesten. Lediglich
-müssen die Abhängigkeiten für den Unittest ausgetauscht werden durch sogenannte Mocks, die genau das tun, was wir für
+müssen die Abhängigkeiten für den Unittest ausgetauscht werden durch sogenannte Doubles, die genau das tun, was wir für
 den Unittest brauchen. Der Unittest übernimmt dann die Aufgabe des Composition Root.
 
 Wie sieht der Test nun aus? Wie Eingangs beschrieben, muss er den Prozess selbst prüfen, den der Sentinel implementiert.
-Und da dieser nun sehr abstrahiert wurde, gibt es nur noch einen nötigen Test:
+Und der sieht ja so aus:
 
-1. Das WeatherOracle liefert einen von uns definierten Wert für die Windgeschwindigkeit.
-2. Dieser Wert muss im WeatherCheck ankommen, sonst schlägt der Test fehl.
-3. Der WeatherCheck gibt eine vorgegbene Meldung zurück.
-4. Der WeatherReport muss genau diese Meldung empfangen, sonst schlägt der Test fehl.
-5. Wenn kein Fehlschlag festgestellt wurde, ist der Test bestanden.
+1. Hole die Windgeschwindigkeit vom WeatherOracle
+2. Gib diese Windgeschwindigkeit an den WeatherCheck weiter
+3. Der WeatherCheck gibt eine Meldung zurück
+4. Gib diese Meldung an den WeatherReport weiter
+
+Der Sentinel funktioniert genau dann richtig, wenn der WeatherCheck die Windgeschwindigkeit vom WeatherOracle empfängt
+und zusätzlich der WeatherReport die Meldung empfängt, die der WeatherCheck ausgibt. Und das können wir prüfen, indem
+wir:
+
+1. Das echte WeatherOracle austauschen gegen einen Stub, der immer einen von uns definierten Festwert liefert,
+2. den echten WeatherCheck gegen einen Spion austauschen, der
+    1. die empfangene Windgeschwindigkeit protokolliert und
+    2. eine zuvor definierte Nachricht zurücksendet,
+3. den echten WeatherReport gegen einen Spion austauschen, der die empfangene Meldung protokolliert und
+4. am Ende prüfen, ob die beiden protokollierten Werte für Wind und Meldung unseren zuvor definierten Werten
+   entsprechen.
+
+Im Unittest sieht das so aus:
+
+```java
+public class SentinelTest {
+  @Test
+  void verifySentinelOrchestration( ) {
+    //assemble
+    //festwerte und doubles definieren
+    final int wind = 60;
+    final String message = "XXX";
+
+    //erstellen eines stubs für das WeatherOracle, der bei getWind immer den oben definierten wert *wind* liefert.
+    var weatherOracleStub = new WeatherOracle( ) {
+      @Override
+      public int getTemperature( ) {
+        throw new UnsupportedOperationException( "Method not implemented" );
+      }
+
+      @Override
+      public int getWind( ) {
+        return wind;
+      }
+
+      @Override
+      public int getHumidity( ) {
+        throw new UnsupportedOperationException( "Method not implemented" );
+      }
+
+      @Override
+      public int getPrecipitation( ) {
+        throw new UnsupportedOperationException( "Method not implemented" );
+      }
+    };
+
+    //erstellen eines spys für WeatherCheck, der den empfangenen windwert protokolliert
+    //und die oben definierte *message* zurückliefert
+    var weatherCheckSpy = new WeatherCheck( ) {
+      private Number receivedWind;
+
+      @Override
+      public String check( Number n ) {
+        receivedWind = n;
+        return message;
+      }
+    };
+
+    //erstellen eines spys für WeatherReport, der die empfangene nachricht protokolliert
+    var weatherReportSpy = new WeatherReport( ) {
+      private String receivedMessage;
+
+      @Override
+      public void report( String msg ) {
+        receivedMessage = msg;
+      }
+    };
+
+    //act
+    //einen Sentinel mit den doubles erstellen und laufen lassen
+    var cut = new Sentinel(
+      weatherOracleStub,
+      weatherReportSpy,
+      weatherCheckSpy );
+    cut.run( );
+
+    //assert
+    //die protokollierten werte müssen den definierten festwerten entsprechen
+    Assertions.assertEquals( wind, weatherCheckSpy.receivedWind );
+    Assertions.assertEquals( message, weatherReportSpy.receivedMessage );
+  }
+}
+```
+
+Im Ergebnis haben wir hiermit die Klasse Sentinel komplett isoliert, das heißt unabhängig von anderen Abhängigkeiten
+testen können. Der Original `WindCheck` und der Original `TrayReport` können sich ändern, wie sie wollen, aber der
+Sentinel kann immer getestet und damit seine Fehlerfreiheit bewiesen werden, weil der Prozess, den er implementiert, nur
+von den entsprechenden Abstraktionen dieser Klassen abhängig ist, aber nicht von den Konkreten Implementierungen,
+nämlich den Klassen selbst.
 
 Noch zwei Anmerkungen zum Test:
 
@@ -301,8 +390,21 @@ Noch zwei Anmerkungen zum Test:
    einmal, dass der Prozess korrekt durchlaufen wird, dass der Datenfluss stimmt: Die Windgeschwindigkeit muss vom
    `WeatherOracle` zum `WeatherCheck` gehen und das daraus resultierende Checkergebnis zum `WeatherReport`.
    Man könnte zwei Tests erstellen, aber das wäre im Großen und Ganzen eine Codeduplizierung und schlichtweg unnötig.
-2. Man könnte argumentieren, dass der Test interna, also Implementierungsdetails testet. Das ist auch nicht direkt von
-   der Hand zu weißen, da sich der Test anpassen müsste, wenn sich der Prozess ändert. Er ist strukturgebunden.
-   Allerdings testet der Test gegen das Protokoll, das heißt gegen das Verhalten des Sentinels, und das ist ja gerade
-   das Versprechen, das der Sentinel gibt. Er deligiert Arbeiten, um zu einem bestimmten Ergebnis zu gelangen. Dies gilt
-   es, abzusichern. Und das tut der Test.
+2. Man könnte argumentieren, dass der Test interna, also Implementierungsdetails, des Sentinels testet. Das ist auch
+   nicht direkt von der Hand zu weißen, da sich der Test anpassen müsste, wenn sich die Struktur des Prozesses ändert.
+   Aber: Bei einem Orchestrator wie der Sentinelklasse ist die Struktur das Verhalten. Der Test prüft nicht die private
+   Mechanik, sondern die Einhaltung des Protokolls. Er stellt sicher, dass der Sentinel sein Versprechen einlöst, als
+   Bindeglied zwischen Wetterdaten, Logik und Ausgabe zu fungieren.
+
+Sie haben nun also verstanden, warum Dependency Inversion ein wichtiges Prinzip ist, dass es einzuhalten gilt. Allein
+durch Dependency Inversion werden Module erst (unit)testbar. Und natürlich konnten die Abhängigkeiten nur identifiziert
+und abstrahiert werden, weil wir zuvor das Single Responsibility-Prinzip umgesetzt haben.
+
+Übrigens: Haben Sie die unschöne Implementierung des WeatherOracle-Stubs gesehen? Drei Methoden werfen eine
+UnsupportedOperationException. Im Unittest ist das in Ordnung, da wir die Methoden nie rufen, aber implementieren
+müssen. Aber tatsächlich ist dies ein Verstoß gegen die Liskov'sche Regel oder in SOLID-Termen: Das Liskov Substitution
+Principle. Das wird uns noch Probleme bereiten, aber darauf kommen wir noch zu sprechen.
+
+Zunächst geht es mit dem Open Closed Principle weiter.
+
+[Inhalt](../script.md) | [Nächstes Kapitel](70_ocp.md)
