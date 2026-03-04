@@ -43,6 +43,40 @@ public class Sentinel {
 }
 ```
 
+Im Klassendiagramm sieht das so aus (Darstellung inklusive SystemTray und TrayIcon, ohne Protokollierung).
+
+```plantuml
+@startuml
+class Sentinel {
+  + {static} main()
+}
+
+class WeatherOracleFactoryProduction {
+  + get() : WeatherOracle
+}
+
+interface WeatherOracle <<interface>> {
+  + getWind() : int
+}
+
+class SystemTray {
+  + {static} getSystemTray() : SystemTray
+}
+
+class TrayIcon {
+  + TrayIcon(image : Image, tooltip : String)
+  + displayMessage(title : String, text : String, type : MessageType)
+}
+
+Sentinel ..> WeatherOracleFactoryProduction : <<create>>
+WeatherOracleFactoryProduction ..> WeatherOracle : <<create>>
+Sentinel ..> WeatherOracle
+
+Sentinel ..> SystemTray
+Sentinel ..> TrayIcon : <<create>>
+@enduml
+```
+
 Offensichtlich ist zunächst, dass der Sentinel den Prozess des Erstellens eines Wetterreports oder einer Wetterwarnung
 implementiert. Außerdem agiert die Klasse als Einstiegspunkt für die Applikation. Das wird tatsächlich erst später ein
 SRP-Problem, wenn wir uns mit Dependency Inversion und Dependency Injection beschäftigen, denn üblicherweise ist die
@@ -54,7 +88,7 @@ Sentinel-Klasse noch weitere Zuständigkeiten hat. Zusammengefasst:
 * sie implementiert Regeln, die zu einer Wetterwarnung führen UND
 * sie erzeugt ein Ausgabeformat für die potenzielle Wetterwarnung.
 
-Das einzige Aufgabe, die Sie nicht übernimmt, ist die Wettervorschau. Das macht das `WeatherOracle`.
+Die einzige Aufgabe, die sie nicht übernimmt, ist die Wettervorschau. Das macht das `WeatherOracle`.
 
 Ändert sich also einer dieser Aspekte, bedingt dies eine Änderung der Klasse. Die Klasse hat also mindestens vier
 Gründe, sich zu ändern. Diese könnten sein:
@@ -96,7 +130,8 @@ herausgelöst werden. Dabei ist das Ziel, dass der Sentinel nur noch den Prozess
 Der Wetterservice an sich ist schon gut abstrahiert, sogar mit Schnittstelle. Da es sich hier um eine externe Bibliothek
 handelt, gibt es aktuell nichts zu tun.
 
-Schauen wir als nächstes auf die Prüfung, ob eine Wetterwarnung ob des Windes angebracht ist oder nicht. Die Prüfung
+Schauen wir als Nächstes auf die Prüfung, ob eine Wetterwarnung aufgrund des Windes angebracht ist oder nicht. Die
+Prüfung
 soll natürlich aus dem Sentinel verschwinden und extern aufgehängt werden, nämlich in der Klasse `WindCheck`. Diese
 bietet die Methode `String checkWind(int wind)` an, die eine Windgeschwindigkeit entgegennimmt und eine Meldung
 zurückliefert. Der `WindCheck` kümmert sich also allein um die Prüfung auf eine Windwarnung.  
@@ -122,7 +157,7 @@ public class WindCheck {
 }
 ```
 
-Bleibt noch die Warnung selbst, das Modul, dass die Meldung an den Benutzer übermittelt. Diese erfolgt bereits über ein
+Bleibt noch die Warnung selbst, das Modul, das die Meldung an den Benutzer übermittelt. Diese erfolgt bereits über ein
 `TrayIcon` und das Meldungssystem des Betriebssystems. Die Instanziierung erfolgt mitten im Prozess, eine Meldung wird
 nur nach erfolgreicher Prüfung auf eine Windwarnung ausgegeben (über `trayIcon#displayMessage(...)`). Dies sollte
 dringend extrahiert werden, und zwar in eine neue Klasse `BalloonWarning`. Positiver Nebeneffekt: Da die Meldung auf dem
@@ -217,7 +252,7 @@ public class Main {
 }
 ```
 
-Im Endergebnis sind die Verantwortlichkeiten nun klar getrennt (man beachte: kein „und“, weder im Namen noch in der
+Im Endergebnis sind die Verantwortlichkeiten nun klar getrennt (man beachte: kein Und, weder im Namen noch in der
 Beschreibung).
 
 | Klasse                            | Verantwortung                               |
@@ -228,10 +263,105 @@ Beschreibung).
 | WindCheck                         | Prüfung auf Windwarnung                     |
 | BalloonWarning                    | Meldungsausgabe                             |
 
+In der grafischen Darstellung wird der Wandel vom Skript zum System sichtbar. Während das Klassendiagramm die saubere
+Trennung der Zuständigkeiten aufzeigt, lässt das Sequenzdiagramm ein Protokoll erkennen: Die Sentinel-Klasse koordiniert
+nur noch den Datenfluss zwischen den tatsächlichen Expertenklassen für Wetterdaten, Prüfung und Benachrichtigung.
+
+```plantuml
+@startuml
+class Main {
+  + {static} main()
+}
+
+class Sentinel {
+  - weatherService : WeatherOracle
+  - balloonWarning : BalloonWarning
+  - windCheck : WindCheck
+  + Sentinel()
+  + run()
+}
+
+interface WeatherOracle <<interface>> {
+  + getWind() : int
+}
+
+class WeatherOracleFactoryProduction {
+  + get() : WeatherOracle
+}
+
+class WindCheck {
+  + checkWind(wind: int) : String
+}
+
+class BalloonWarning {
+  - trayIcon : TrayIcon
+  + BalloonWarning()
+  + issue(message: String)
+}
+
+Main ..> Sentinel : <<create>>
+
+Sentinel ..> WeatherOracleFactoryProduction : <<create>>
+Sentinel ..> BalloonWarning : <<create>>
+Sentinel ..> WindCheck : <<create>>
+
+WeatherOracleFactoryProduction ..> WeatherOracle : <<create>>
+
+Sentinel --> WeatherOracle
+Sentinel --> BalloonWarning
+Sentinel --> WindCheck
+@enduml
+```
+
+```plantuml
+@startuml
+participant Main
+participant Sentinel
+
+activate Main
+    Main -> Sentinel ** : <<create>>
+    activate Sentinel
+      create WeatherOracleFactoryProduction
+      Sentinel -> WeatherOracleFactoryProduction : <<create>>
+      Sentinel -> WeatherOracleFactoryProduction : get()
+      activate WeatherOracleFactoryProduction
+        create WeatherOracle
+        WeatherOracleFactoryProduction -> WeatherOracle : <<create>>
+        WeatherOracleFactoryProduction --> Sentinel : weatherService
+      deactivate WeatherOracleFactoryProduction
+      
+      create WindCheck
+      Sentinel -> WindCheck : <<create>>
+      
+      create BalloonWarning
+      Sentinel -> BalloonWarning : <<create>>
+    deactivate Sentinel
+    
+    Main -> Sentinel : run()
+    activate Sentinel
+      Sentinel -> WeatherOracle : getWind()
+      activate WeatherOracle
+        WeatherOracle --> Sentinel : windSpeed
+      deactivate WeatherOracle
+      
+      Sentinel -> WindCheck : checkWind(windSpeed)
+      activate WindCheck
+        WindCheck --> Sentinel : message
+      deactivate WindCheck
+      
+      Sentinel -> BalloonWarning : issue(message)
+      activate BalloonWarning
+        BalloonWarning --> Sentinel
+      deactivate BalloonWarning
+    deactivate Sentinel
+deactivate Main
+@enduml
+```
+
 Die Musterlösung finden Sie im Modul `version2`.
 
 Schauen Sie auf das Ergebnis. Sie werden wahrscheinlich kritisieren, dass wir jetzt statt einer Klasse und 31 Zeilen
-Code ganze fünf Klassen und sage und schreibe 73 Codezeilen haben. Unsere Codebasis hat sich also mehr als Verdoppelt.
+Code ganze fünf Klassen und sage und schreibe 73 Codezeilen haben. Unsere Codebasis hat sich also mehr als verdoppelt.
 Warum ist diese Änderung trotzdem vorteilhaft?
 
 Es wirkt paradox, ist es aber nicht: Ein Teil der Codezeilen ist trivialer Boilerplate-Code, wie Klassen- und
@@ -246,7 +376,7 @@ kognitiven Entlastung der Entwickler. Weiterhin sinkt die Chance auf ungewollte 
 
 Das wichtigste Argument ist jedoch die Testbarkeit. Allein durch die Neuordnung der Verantwortungsbereiche ist es nun
 möglich, einfache, fokussierte Tests für die einzelnen Klassen zu schreiben. Vorher konnte nur der gesamte Prozess
-getestet werden. Auf diese Unittests werden wir hier jedoch nicht im Detail eingehen. Die Tests, die Sie jetzt schreiben
+getestet werden. Auf diese Unittests werden wir hier jedoch nicht eingehen. Die Tests, die Sie jetzt schreiben
 könnten, würden zudem noch nicht in allen Fällen der Definition von Unittests genügen, da zumindest der `Sentinel` noch
 starke Abhängigkeiten aufweist, die mit unserer Codeänderung mitnichten aufgelöst sind. Was damit gemeint ist und wie
 wir dieses Problem lösen, besprechen wir im nächsten Kapitel.

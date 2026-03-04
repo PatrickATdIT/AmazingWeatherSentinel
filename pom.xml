@@ -12,6 +12,7 @@
         <module>version1</module>
         <module>_working</module>
         <module>version2</module>
+        <module>version3</module>
     </modules>
 
     <properties>
