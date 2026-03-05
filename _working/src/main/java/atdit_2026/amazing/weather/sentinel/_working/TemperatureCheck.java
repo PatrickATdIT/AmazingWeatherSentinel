@@ -5,22 +5,21 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 
-public class WindCheck implements WeatherCheck {
+public class TemperatureCheck implements WeatherCheck {
   private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
 
   @Override
   public String check( WeatherParameters weatherParameters ) {
-    log.info( "Wind check" );
-    return checkWind( weatherParameters.wind( ).intValue( ) );
-  }
+    log.info( "Temperature check" );
 
-  private String checkWind( int wind ) {
     String result;
-    if( wind > 40 ) {
-      result = "Wind warning: %d km/h".formatted( wind );
-    } else {
-      result = "Wind within limits: %d km/h".formatted( wind );
-    }
+    final var temp = weatherParameters.temperature( ).intValue( );
+
+    if( temp > 30 )
+      result = "Temperature warning: %d °C".formatted( temp );
+    else
+      return "Temperature within limits: %d °C".formatted( temp );
+
     log.info( result );
     return result;
   }

@@ -522,8 +522,8 @@ prüfen, indem wir:
 
 1. Das echte `WeatherOracle` austauschen gegen einen Stub, der immer einen von uns definierten Festwert liefert,
 2. den echten `WeatherCheck` gegen einen Spion austauschen, der
-   1. die empfangene Windgeschwindigkeit protokolliert und
-   2. eine zuvor definierte Nachricht zurücksendet,
+    1. die empfangene Windgeschwindigkeit protokolliert und
+    2. eine zuvor definierte Nachricht zurücksendet,
 3. den echten `WeatherReport` gegen einen Spion austauschen, der die empfangene Meldung protokolliert,
 4. und am Ende prüfen, ob die beiden protokollierten Werte für Wind und Meldung unseren zuvor definierten Werten
    entsprechen.
@@ -623,6 +623,16 @@ Noch zwei Anmerkungen zum Test:
 Sie haben nun also verstanden, warum Dependency Inversion ein wichtiges Prinzip ist, das es einzuhalten gilt. Allein
 durch Dependency Inversion werden Module erst (unit-)testbar. Und natürlich konnten die Abhängigkeiten nur identifiziert
 und abstrahiert werden, weil wir zuvor das Single-Responsibility-Prinzip umgesetzt haben.
+
+Noch eine letzte Anmerkung zum DIP: Es geht nicht darum, jede Abhängigkeit auszutauschen. Feste Abhängigkeiten zu
+stabilen Modulen dürfen bestehen (z. B. Java-Core-Klassen, Unit-Test-Frameworks, Logging-Frameworks), aber trotzdem ist
+Vorsicht geboten, denn auch eine als stabil erachtete Abhängigkeit könnte irgendwann zwangsweise zu ersetzen sein.  
+Im Dezember 2021 wurde eine Sicherheitslücke beim weitverbreiteten Protokollierungsframework Log4j aufgedeckt, unter
+deren Ausnutzung es möglich war, eigenen (schädlichen) Code auf einem fremden Server auszuführen. Wurde Log4j ohne
+Abstrahierung eingebunden, war das System potenziell gefährdet. Eine Nutzung des DIP (Dependency Inversion Principle)
+hilft natürlich nicht gegen die Sicherheitslücke selbst, jedoch wäre die Protokollierungslösung dadurch relativ einfach
+austauschbar gewesen. Typischerweise kann die Protokollierung über SLF4J abstrahiert werden. Diese Abstrahierung geht
+aber mit dem zwangsweisen Verzicht auf frameworkspezifische Features einher.
 
 Übrigens: Haben Sie die unschöne Implementierung des `WeatherOracle`-Stubs gesehen? Drei Methoden werfen eine
 `UnsupportedOperationException`. Im Unittest ist das in Ordnung, da wir die Methoden nie rufen, aber implementieren
