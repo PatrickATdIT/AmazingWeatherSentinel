@@ -151,6 +151,8 @@ Schreiben Sie anschließend einen Unittest für den Sentinel.
 
 ## Lösungsvorschlag
 
+Die Musterlösung finden Sie im Modul `version3`. Wie man dahin kommt, wird im folgenden erläutert:
+
 Beginnen wir mit dem Wetterservice. Dieser ist prinzipiell schon sehr gut abstrahiert über die Schnittstelle
 `WeatherOracle`. Daher ist hier erneut nichts zu tun.
 

@@ -1,4 +1,4 @@
-package atdit_2026.amazing.weather.sentinel._working;
+package atdit_2026.amazing.weather.sentinel.version4;
 
 import atdit_2026.weather.oracle.WeatherOracleFactoryProduction;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ public class Main {
     var sentinel = new Sentinel(
       new WeatherOracleFactoryProduction( ).get( ),
       new TrayReport( ),
-      List.of( ) );
+      List.of( new WindCheck( ), new TemperatureCheck( ), new WindAndFrostCheck( ) ) );
     sentinel.run( );
   }
 }
