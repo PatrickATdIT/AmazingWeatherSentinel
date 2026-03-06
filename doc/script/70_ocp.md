@@ -112,7 +112,7 @@ vorhergesagt wird.
 
 Da wir wissen, dass es die Anforderung nach neuen Prüfungen gibt, ist der erste Schritt die Änderung des
 WeatherCheck-Interfaces. Die Schnittstelle soll weiterhin eine Nachricht zurückgeben, aber die Parameter sollen noch
-generischer übergeben werden. Der Wunsch ist, dass diese Schnittstelle nie wieder angepasst werden muss. Am besten geht
+generischer sein. Der Wunsch ist, dass diese Schnittstelle nie wieder angepasst werden muss. Am besten geht
 dies durch die Definition einen Wrappertypen um die eigentlich gewollten Parameter. Was heißt das?  
 Gewollt ist aktuell noch der Parameter wind vom Typ Number, später soll auch Temperature vom Typ Number hinzukommen,
 vielleicht viel später noch ein dritter. Würden die Parameter einfach in der Definition der Schnittstellenmethode
@@ -192,68 +192,22 @@ public class WindCheck implements WeatherCheck {
 }
 ```
 
-Der Sentinel, Main und der Unittest haben noch Fehler, aber implementieren wir zunächst trotzdem schon einmal die neuen
-Anforderungen, also die zusätzlichen Prüfungen, nach denen Elon Bezos verlangt.
-Zuerst der Temperaturcheck:
+Als nächstes in der Reihe sollte der Sentinel korrigiert werden, denn die Änderungen am `WeatherCheck`-Interface haben
+natürlich Auswirkungen auf den Aufrufer.
 
-```java
-public class TemperatureCheck implements WeatherCheck {
-  private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
-
-  @Override
-  public String check( WeatherParameters weatherParameters ) {
-    log.info( "Temperature check" );
-
-    String result;
-    final var temp = weatherParameters.temperature( ).intValue( );
-
-    if( temp > 30 )
-      result = "Temperature warning: %d °C".formatted( temp );
-    else
-      return "Temperature within limits: %d °C".formatted( temp );
-
-    log.info( result );
-    return result;
-  }
-}
-```
-
-Und dann die Prüfung auf frostigen Wind:
-
-```java
-public class WindAndFrostCheck implements WeatherCheck {
-  private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
-
-  @Override
-  public String check( WeatherParameters weatherParameters ) {
-    log.info( "Wind/Frost check" );
-
-    final var wind = weatherParameters.wind( ).intValue( );
-    final var temp = weatherParameters.temperature( ).intValue( );
-    String result;
-
-    if( wind > 30 && temp < 0 ) {
-      result = "Wind/Frost warning: %d km/h and %d °C ".formatted( wind, temp );
-    } else {
-      result = "Wind/Frost indicators within limits: %d km/h and %d °C ".formatted( wind, temp );
-    }
-    log.info( result );
-
-    return result;
-  }
-}
-```
-
-Nun muss der Sentinel angepasst werden. Das sind insgesamt drei Schritte.
-
-1. Der Sentinel muss mehrere Prüfungen ausführen. Dazu muss er zunächst in der Lage sein, mehrere Implementierungen der
-   `WeatherChecks` zu empfangen. Dazu wird dem Constructor nun eine Liste mit `WeatherChecks` anstelle eines einzelnen
-   mitgegeben.
-2. Die einzelnen Wetterprüfungen empfangen jetzt nicht mehr nur einen Windwert, sondern ein komplexes Objekt vom Typ
-   WeatherParameters. das aktuell Wind und Temperatur enthält. Das muss natürlich entsprechend aufgebaut werden.
-3. Statt des Aufrufs des einen einzelnen `WeatherChecks` muss die Liste aller `WeatherChecks` iteriert werden und jede
-   Wetterprüfung einzeln aufgerufen werden. Die Ergebnisse jeder Prüfung, also die Nachrichten, soll zeilenweise
-   untereinander ausgegeben werden.
+1. Die Windprüfung empfängt nicht mehr nur einen Windwert, sondern ein komplexes Objekt vom Typ WeatherParameters, das
+   aktuell Wind und Temperatur enthält. Die Schnittstelle muss selbstverständlich entsprechend versorgt werden und dafür
+   muss das `WeatherPrameters`-Objekt zunächst einmal aufgebaut werden.
+2. Der Sentinel soll mehrere Prüfungen ausführen. Dazu muss er zunächst in der Lage sein, mehrere Implementierungen der
+   `WeatherChecks` zu empfangen. Für diesen Zweck reicht uns eine Liste vollkommen aus. Der Constructor muss
+   entsprechend angepasst werden, dass er nun eine Liste mit `WeatherChecks` anstelle eines einzelnen
+   `WeatherChecks` empfangen kann. Zusätzlich muss auch Platz in den Attributen für diese Liste geschaffen werden. Der
+   alte, einzige `WeatherCheck` wird dagegen nicht mehr gebraucht.
+3. Das Protokoll ändert sicht natürlich auch, denn statt des Aufrufs eines einzelnen `WeatherChecks` muss jetzt die
+   Liste aller `WeatherChecks` iteriert und jede Wetterprüfung für sich ausgeführt werden. Die Ergebnisse jeder Prüfung,
+   also die Nachrichten, müssen verknüpft werden, um das Benachrichtigungsmodul `WeatherReport` zu versorgen. Da die
+   Ausgabe ein Detail ist, das hier nicht im Fokus steht, reicht es aus, die Meldungen zu konkatenieren und mit einem
+   Zeilenumbruch zu trennen.
 
 Die Klasse sieht nach den Codeänderungen wie folgt aus:
 
@@ -402,3 +356,55 @@ public class SentinelTest {
 Mit diesem Ergebnis können Sie und vor allem unser aller liebster Milliardär zufrieden sein. Die Qualität des Amazing
 Weather Sentinels ist erneut gestiegen, denn jetzt können neue Prüfungen mit einfachen Schritten implementiert werden,
 ohne die Gefahr zu laufen, dass vorhandener inkompatibel verändert werden muss. Die Investition hat sich also gelohnt.
+
+Der Sentinel, Main und der Unittest haben noch Fehler, aber implementieren wir zunächst trotzdem schon einmal die neuen
+Anforderungen, also die zusätzlichen Prüfungen, nach denen Elon Bezos verlangt.
+Zuerst der Temperaturcheck:
+
+```java
+public class TemperatureCheck implements WeatherCheck {
+  private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
+
+  @Override
+  public String check( WeatherParameters weatherParameters ) {
+    log.info( "Temperature check" );
+
+    String result;
+    final var temp = weatherParameters.temperature( ).intValue( );
+
+    if( temp > 30 )
+      result = "Temperature warning: %d °C".formatted( temp );
+    else
+      return "Temperature within limits: %d °C".formatted( temp );
+
+    log.info( result );
+    return result;
+  }
+}
+```
+
+Und dann die Prüfung auf frostigen Wind:
+
+```java
+public class WindAndFrostCheck implements WeatherCheck {
+  private static final Logger log = LoggerFactory.getLogger( MethodHandles.lookup( ).lookupClass( ) );
+
+  @Override
+  public String check( WeatherParameters weatherParameters ) {
+    log.info( "Wind/Frost check" );
+
+    final var wind = weatherParameters.wind( ).intValue( );
+    final var temp = weatherParameters.temperature( ).intValue( );
+    String result;
+
+    if( wind > 30 && temp < 0 ) {
+      result = "Wind/Frost warning: %d km/h and %d °C ".formatted( wind, temp );
+    } else {
+      result = "Wind/Frost indicators within limits: %d km/h and %d °C ".formatted( wind, temp );
+    }
+    log.info( result );
+
+    return result;
+  }
+}
+```
