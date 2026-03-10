@@ -14,6 +14,7 @@
         <module>version2</module>
         <module>version3</module>
         <module>version4</module>
+        <module>version5</module>
     </modules>
 
     <properties>
@@ -46,6 +47,12 @@
             <dependency>
                 <groupId>atdit_2026.weather.oracle</groupId>
                 <artifactId>WeatherOracle</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>atdit_2026.palantair</groupId>
+                <artifactId>PalantAir</artifactId>
                 <version>1.0.0</version>
             </dependency>
         </dependencies>

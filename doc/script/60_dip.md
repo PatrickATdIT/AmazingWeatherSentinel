@@ -1,13 +1,13 @@
 ## Das Dependency Inversion Principle
 
-Im vorangegangenen Kapitel haben Sie den Amazing Weather Sentinel so refaktorisiert, dass seine Funktionalität
+Im vorangegangenen Kapitel haben Sie den `AmazingWeatherSentinel` so refaktorisiert, dass seine Funktionalität
 entsprechend dem Single-Responsibility-Prinzip auf mehrere verantwortlichkeitsspezifische Klassen verteilt wird. Neben
 der kognitiven Erleichterung für die Entwickler wurde vor allem die erhöhte Testbarkeit als positiver Effekt
 herausgestellt, da nun fokussierte Unittests geschrieben werden können. Gleichzeitig wurde aber auch kritisiert, dass es
 noch immer starre Abhängigkeiten gibt, die nicht aufgelöst werden können, weswegen Unittesting noch immer nicht
 durchgehend möglich ist. Was bedeutet das eigentlich?
 
-Versuchen wir zunächst, einen Unittest für den Sentinel zu schreiben. Schauen wir uns dazu die Klasse noch einmal an,
+Versuchen wir zunächst, einen Unittest für den `Sentinel` zu schreiben. Schauen wir uns dazu die Klasse noch einmal an,
 sowohl als UML-Klassendiagramm (inklusive Kontext) als auch im Quelltext.
 
 ```plantuml
@@ -90,10 +90,10 @@ Bleibt also die `run()`-Methode. Aber die hat keinen Rückgabewert und ist damit
 Annahme: Input A führt zu Output B, also kann auf B geprüft werden). Der richtige Ansatz wäre es, den Test gegen den
 Prozess durchführen zu lassen. Was ist denn die Erwartung? Was soll `run()` machen?
 
-1. Den Wind vom Service bestimmen
+1. Den Wind vom Service bestimmen.
 2. Den Wind-Wert durch die Wind-Prüfung laufen lassen und eine Nachricht empfangen (Windwarnung bei > 40 km/h, sonst
-   alles OK)
-3. Die Nachricht über `BalloonWarning#issue( message )` absetzen
+   alles OK).
+3. Die Nachricht über `BalloonWarning#issue( message )` absetzen.
 
 Und wann würde der Prozess funktionieren, wie er soll?
 
@@ -108,7 +108,7 @@ Das ginge prinzipiell, würde den Code aber testspezifisch aufblasen und das Uni
 Produktivcode ziehen – also eine schlechte Idee. Darüber hinaus müsste `WeatherService` deterministisch sein, damit er
 das zum Testzeitpunkt gewünschte Ergebnis liefert, oder `WindCheck` müsste eine Verhaltensänderung eingeimpft bekommen,
 damit es entweder die Warnung oder „Alles OK“ zurückgibt, unabhängig vom Wind. All das ist aber aktuell nicht möglich,
-da alle drei Abhängigkeiten bereits konkrete Implementierungen sind. Der Sentinel ist komplett abhängig von diesen
+da alle drei Abhängigkeiten bereits konkrete Implementierungen sind. Der `Sentinel` ist komplett abhängig von diesen
 Konkretisierungen.
 
 Der Code muss entsprechend des Dependency-Inversion-Prinzips umgekehrt werden. Bevor wir das machen, kommen wir zur
@@ -116,12 +116,12 @@ Definition: Robert C. Martin hat auch dieses Prinzip definiert.
 Die klassische Definition nach Robert C. Martin:
 
 **1. Module höherer Ebene sollten nicht von Modulen niedrigerer Ebene abhängen. Beide sollten von Abstraktionen
-abhängen.** Die höhere Ebene ist als Hierarchie zu verstehen. Der Sentinel oder der Prozess ist dabei tonangebend, nicht
-aber der Wetterdienst, die Windprüfung oder die Ausgabe. Aktuell hängt der Sentinel wie oben gezeigt von allen drei
-Abhängigkeiten ab. Ändert sich eine davon, muss der Sentinel geändert werden. Das ist nicht wünschenswert, da es die
-Struktur des Codes sehr starr macht und ein Austauschen von Modulen verhindert.
-Die Lösung ist, eine Schnittstelle einzufügen. Der Sentinel soll von einer Schnittstelle Wetterdienst abhängig sein. Der
-konkrete Wetterdienst soll diese Schnittstelle implementieren, oder er kann nicht genutzt werden. Damit hängen beide
+abhängen.** Die höhere Ebene ist als Hierarchie zu verstehen. Der `Sentinel` oder der Prozess ist dabei tonangebend,
+nicht aber der Wetterdienst, die Windprüfung oder die Ausgabe. Aktuell hängt der `Sentinel` wie oben gezeigt von allen
+drei Abhängigkeiten ab. Ändert sich eine davon, muss der `Sentinel` geändert werden. Das ist nicht wünschenswert, da es
+die Struktur des Codes sehr starr macht und ein Austauschen von Modulen verhindert.
+Die Lösung ist, eine Schnittstelle einzufügen. Der `Sentinel` soll von einer Schnittstelle Wetterdienst abhängig sein.
+Der konkrete Wetterdienst soll diese Schnittstelle implementieren, oder er kann nicht genutzt werden. Damit hängen beide
 Module von einer Abstraktion ab.
 
 **2. Abstraktionen sollten nicht von Details abhängen. Details sollten von Abstraktionen abhängen.** Der `WindCheck`
@@ -147,11 +147,11 @@ eine entsprechende Öffnung der Klassen eine Dependency Injection erlaubt. Die v
 ## Aufgabe
 
 Modifizieren Sie Elon Bezos' Programm so, dass die Grundsätze des Dependency-Inversion-Prinzips umgesetzt werden.
-Schreiben Sie anschließend einen Unittest für den Sentinel.
+Schreiben Sie anschließend einen Unittest für den `Sentinel`.
 
 ## Lösungsvorschlag
 
-Die Musterlösung finden Sie im Modul `version3`. Wie man dahin kommt, wird im folgenden erläutert:
+Die Musterlösung finden Sie im Modul `version3`. Wie man dahin kommt, wird im Folgenden erläutert:
 
 Beginnen wir mit dem Wetterservice. Dieser ist prinzipiell schon sehr gut abstrahiert über die Schnittstelle
 `WeatherOracle`. Daher ist hier erneut nichts zu tun.
@@ -170,8 +170,8 @@ public interface WeatherCheck {
 ```
 
 Eine Anmerkung dazu: Prinzipiell lautet die Empfehlung, dass Klassennamen aus Substantiven bestehen und Schnittstellen
-aus Adjektiven. Von dieser Regelung halte ich ... nun ja ... nichts. Nennen Sie Ihre Schnittstellen, wie Sie
-wollen, Hauptsache die Namen sind sprechend im Sinne des Clean Code.
+aus Adjektiven. Von dieser Regelung halte ich ... nun ja ... nichts. Nennen Sie Ihre Schnittstellen, wie Sie wollen,
+Hauptsache die Namen sind sprechend im Sinne des Clean Code.
 
 Die Klasse `WindCheck` implementiert nun diese Schnittstelle. Dabei stellen wir fest, dass die Schnittstellenmethode
 nicht direkt auf `checkWind( int wind )` abgebildet werden kann. Unsere Möglichkeiten sind Delegation (`check( ... )`
@@ -272,8 +272,8 @@ public class TrayReport implements WeatherReport {
 
 Bleibt noch der `Sentinel`. Eine Abstraktion können wir uns sparen, da sie für das Verständnis des Prinzips und hier im
 Speziellen überhaupt nicht nötig ist. Meine Empfehlung lautet aber: Keine Klasse ohne Schnittstelle!  
-Der Sentinel muss dennoch die Abhängigkeiten injiziert bekommen können. Hierfür benutzen wir Constructor Injection, das
-heißt, der Konstruktor erhält entsprechende Parameter; die Klasse erstellt keine Abhängigkeit mehr selbst. Weiterhin
+Der `Sentinel` muss dennoch die Abhängigkeiten injiziert bekommen können. Hierfür benutzen wir Constructor Injection,
+das heißt, der Konstruktor erhält entsprechende Parameter; die Klasse erstellt keine Abhängigkeit mehr selbst. Weiterhin
 passen wir die Schnittstellenänderungen in der Methode `run()` an.
 
 ```java
@@ -298,8 +298,8 @@ public class Sentinel {
 }
 ```
 
-Man sieht im Ergebnis, dass der Sentinel nun vollkommen unabhängig von irgendwelchen Konkretisierungen ist, sondern nur
-noch Abhängigkeiten zu Abstraktionen, nämlich Schnittstellen, aufweist. Das Dependency-Inversion-Prinzip wurde also
+Man sieht im Ergebnis, dass der `Sentinel` nun vollkommen unabhängig von irgendwelchen Konkretisierungen ist, sondern
+nur noch Abhängigkeiten zu Abstraktionen, nämlich Schnittstellen, aufweist. Das Dependency-Inversion-Prinzip wurde also
 umgesetzt.
 
 Bleibt nur noch die Frage, wo die konkreten Klassen ins Spiel kommen.
@@ -307,10 +307,10 @@ Bleibt nur noch die Frage, wo die konkreten Klassen ins Spiel kommen.
 Als Entwickler von objektorientierten, SOLID-konformen Applikationen wollen Sie sich alle Möglichkeiten offen halten.
 Sie wollen sich möglichst gar nicht entscheiden, aber einmal muss man konkret werden. Üblicherweise geschieht dies im
 sogenannten *Composition Root* – das ist die Komponente, die die Entscheidungen über die Abhängigkeiten trifft und in
-die Applikation gibt bzw. injiziert. Im Amazing Weather Sentinel ist das die `Main`-Klasse. Sie orchestriert das
+die Applikation gibt bzw. injiziert. Im `AmazingWeatherSentinel` ist das die `Main`-Klasse. Sie orchestriert das
 Programm, bevor es die Prozessierung startet (nein, das ist kein Verstoß gegen das SRP, denn die Orchestrierung der
-Module und der Programmstart sind eng aneinander geknüpft und arbeiten auf dasselbe Ziel, den Programmstart, hin).
-Die Main muss also die Abhängigkeiten instanziieren und an den Konstruktor des Sentinel übergeben.
+Module und der Programmstart sind eng aneinander geknüpft und arbeiten auf dasselbe Ziel, den Programmstart, hin). Die
+`Main` muss also die Abhängigkeiten instanziieren und an den Konstruktor des `Sentinel` übergeben.
 
 ```java
 public class Main {
@@ -328,8 +328,8 @@ public class Main {
 ```
 
 Schauen wir uns das Ergebnis dieser Refaktorisierung auch in der Systemsicht an, sprich dem Klassendiagramm. Man sieht
-jetzt sehr schön, dass sämtliche konkreten Implementierungen nur noch über Schnittstellen vom Sentinel angesprochen
-werden. Der Sentinel generiert keine Instanz selbst, sondern kümmert sich allein um den Prozessablauf.
+jetzt sehr schön, dass sämtliche konkreten Implementierungen nur noch über Schnittstellen vom `Sentinel` angesprochen
+werden. Der `Sentinel` generiert keine Instanz selbst, sondern kümmert sich allein um den Prozessablauf.
 
 ```plantuml
 @startuml
@@ -386,7 +386,7 @@ TrayReport ..|> WeatherReport
 ```
 
 Das wird vor allem im Sequenzdiagramm ersichtlich. Sämtliche Instanziierungsarbeit und damit Konkretisierung des Systems
-geschieht an einer zentralen Stelle, nämlich der Main-Klasse.
+geschieht an einer zentralen Stelle, nämlich der `Main`-Klasse.
 
 ```plantuml
 @startuml
@@ -438,13 +438,13 @@ deactivate Main
 
 Und damit hat die Software Elon Bezos wieder an Qualität gewonnen. Denn nunmehr können wir alles im System unittesten.
 Lediglich müssen die Abhängigkeiten für den Unittest durch sogenannte *Doubles* ausgetauscht werden. Doubles sind
-*unsere eigenen* Versionen von modulfremden Implementierungen, etwa dem Wetterservice. Aber auch die eigenen Klassen
-wie `WindCheck` zum Beispiel können unseren Unittest stören. Wir sind zwar die Verantwortlichen für die Implementierung,
-aber selbst dann müssten wir, sollte sich die Implementierung ändern, wahrscheinlich wieder Hand an unseren
-Unittest anlegen. Zum Beispiel könnte der `WindCheck` die Wetterwarnung aufgrund einer Anforderung Elon Bezos' schon bei
-30 km/h werfen, oder die Meldung soll anders lauten oder, trivialerweise, einfach übersetzt werden. Das alles
-wären Gründe, warum sich der Unittest für eine eigentlich andere Klasse, nämlich den Sentinel, ändern müsste. Sie
-erkennen es selbst: Das bedeutete nicht nur Aufwand, sondern wäre auch ein Verstoß gegen das SRP.  
+*unsere eigenen* Versionen von modulfremden Implementierungen, etwa dem Wetterservice. Aber auch die eigenen Klassen wie
+`WindCheck` zum Beispiel können unseren Unittest stören. Wir sind zwar die Verantwortlichen für die Implementierung,
+aber selbst dann müssten wir, sollte sich die Implementierung ändern, wahrscheinlich wieder Hand an unseren Unittest
+anlegen. Zum Beispiel könnte der `WindCheck` die Wetterwarnung aufgrund einer Anforderung Elon Bezos' schon bei 30 km/h
+werfen, oder die Meldung soll anders lauten oder, trivialerweise, einfach übersetzt werden. Das alles wären Gründe,
+warum sich der Unittest für eine eigentlich andere Klasse, nämlich den `Sentinel`, ändern müsste. Sie erkennen es
+selbst: Das bedeutete nicht nur Aufwand, sondern wäre auch ein Verstoß gegen das SRP.  
 Die Empfehlung ist also klar: Isolieren Sie die zu testende Klasse, soweit es geht. Sich am SRP zu orientieren ist dabei
 ein guter Ansatz. Wenn wir eigene Implementierungen für Abhängigkeiten einsetzen, haben wir auch die Macht über die
 Resultate, die diese zurückliefern. Wir sind damit nicht abhängig von externen Modulen, sondern können quasi eine
@@ -510,15 +510,15 @@ ReportSpy ..|> WeatherReport
 @enduml
 ```
 
-Wie sieht der Test nun aus? Wie eingangs beschrieben, muss er den Prozess selbst prüfen, den der Sentinel implementiert.
-Und der sieht ja so aus:
+Wie sieht der Test nun aus? Wie eingangs beschrieben, muss er den Prozess selbst prüfen, den der `Sentinel`
+implementiert. Und der sieht ja so aus:
 
 1. Hole die Windgeschwindigkeit vom `WeatherOracle`.
 2. Gib diese Windgeschwindigkeit an den `WeatherCheck` weiter.
 3. Der `WeatherCheck` gibt eine Meldung zurück.
 4. Gib diese Meldung an den `WeatherReport` weiter.
 
-Der Sentinel funktioniert genau dann richtig, wenn der `WeatherCheck` die Windgeschwindigkeit vom `WeatherOracle`
+Der `Sentinel` funktioniert genau dann richtig, wenn der `WeatherCheck` die Windgeschwindigkeit vom `WeatherOracle`
 empfängt und zusätzlich der `WeatherReport` die Meldung empfängt, die der `WeatherCheck` ausgibt. Und das können wir
 prüfen, indem wir:
 
@@ -530,7 +530,94 @@ prüfen, indem wir:
 4. und am Ende prüfen, ob die beiden protokollierten Werte für Wind und Meldung unseren zuvor definierten Werten
    entsprechen.
 
-Codiert sieht das dann in etwa so aus:
+Codieren wir es unter Zuhilfenahme der `JUnit`-Bibliothek als Unittestframework. Dazu muss zunächst die entsprechende
+Abhängigkeit eingeführt werden. Dies geschieht, da das Projekt auf `Maven` basiert, in der `pom.xml`. Das Projekt
+arbeitet mit einem Root-POM und einem modulspezifischen. Zunächst ändern wir die Root-POM im Project-Root-Ordner und
+nehmen `JUnit Jupiter` in die gemanageten Dependencies auf:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="[http://maven.apache.org/POM/4.0.0](http://maven.apache.org/POM/4.0.0)"
+         xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w3.org/2001/XMLSchema-instance)"
+         xsi:schemaLocation="[http://maven.apache.org/POM/4.0.0](http://maven.apache.org/POM/4.0.0) [http://maven.apache.org/xsd/maven-4.0.0.xsd](http://maven.apache.org/xsd/maven-4.0.0.xsd)">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>atdit_2026.amazing.weather.sentinel</groupId>
+    <artifactId>AmazingWeatherSentinel</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    [...]
+
+    <dependencyManagement>
+        <dependencies>
+            [...]
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>6.0.3</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+</project>
+```
+
+Danach muss die Dependency im eigentlichen Modul, in dem wir uns befinden, eingefügt werden. Die Musterlösung befindet
+sich, wie bereits erwähnt, im Modul `version3`, also ändern wir jene `pom.xml` und nehmen die Abhängigkeit auf.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="[http://maven.apache.org/POM/4.0.0](http://maven.apache.org/POM/4.0.0)"
+         xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w3.org/2001/XMLSchema-instance)"
+         xsi:schemaLocation="[http://maven.apache.org/POM/4.0.0](http://maven.apache.org/POM/4.0.0) [http://maven.apache.org/xsd/maven-4.0.0.xsd](http://maven.apache.org/xsd/maven-4.0.0.xsd)">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>atdit_2026.amazing.weather.sentinel</groupId>
+        <artifactId>AmazingWeatherSentinel</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>version3</artifactId>
+
+    <dependencies>
+        [...]
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+Danach kann der Unittest im src/test-Ordner erstellt werden. Auf die Logik des Tests sind wir oben bereits eingegangen.
+Technisch muss das Folgende passieren:
+
+1. In der Testmethode ist der `Sentinel` der zu testende Code, der `Code under Test` oder kurz `CUT`.
+2. Um den `CUT` nutzen zu können, müssen wir die Constructor-Schnittstelle versorgen mit einem `WeatherOracle`, einem
+   `WeatherCheck`, und einem `WeatherReport`. Da wir den `Sentinel` in Isolation testen wollen, müssen wir eigene,
+   testspezifische Instanzen davon erstellen, die keinerlei echte Logik enthalten, sondern nur die, die wir wünschen.
+   Diese werden wie folgt erstellt:
+    1. Das `WeatherOracle` ist ein Stub, der bei der Methode `getWind()` immer einen Festwert, hier 60, zurückliefert.
+       Alle anderen Methoden brauchen wir nicht. Leer dürfen sie aber nicht bleiben, daher wird bei den anderen Methoden
+       immer eine `UnsupportedOperationException` geworfen.
+    2. Der `WeatherCheck` soll zwei Dinge erledigen:
+        1. Prüfen, dass die zuvor ermittelte Windgeschwindigkeit übergeben wird. Dazu wird sie beim Schnittstellenaufruf
+           in ein Klassenattribut geschrieben, auf das später geprüft werden kann, um sicherzustellen, dass der richtige
+           Wert angekommen ist (60). Dadurch ist der `WeatherCheck` ein `Spy`, denn er beobachtet die übergebenen Daten.
+        2. Gleichzeitig soll der `WeatherCheck` ja eigentlich eine Meldung in Abhängigkeit zur Temperatur zurückliefern.
+           Im Unittest darf dies allerdings immer dieselbe Meldung sein. Die Meldungserstellung interessiert uns nicht,
+           weil wir nur das Protokoll des `Sentinel` testen, also ob die Daten weitergegeben werden. Es wird also immer
+           dieselbe Meldung zurückgegeben.
+    3. Diese Meldung muss laut Protokoll später unverändert im `WeatherReport` ankommen. Daher sieht die Implementierung
+       des `WeatherReport` lediglich das Sichern der Meldung vor, damit man am Ende des Tests prüfen kann, ob die
+       richtige Meldung angekommen ist. Eine Wetterwarnung muss die testspezifische Implementierung nicht liefern, denn
+       ob eine Warnung oder ein "Alles-OK" zurückkommt, ist für das Protokoll irrelevant.
+3. Nach dem Erstellen des `Sentinel` und dessen Aufrufs müssen die Assertions stattfinden. Hier wird geprüft, ob das
+   Protokoll eingehalten wird. Wie oben beschrieben, muss geprüft werden, ob der `WeatherCheck` die richtige Temperatur
+   erhalten und ob der `WeatherReport` die erwartete Nachricht bekommen hat.
+
+Die fertige Implementierung sieht so aus:
 
 ```java
 public class SentinelTest {
@@ -603,10 +690,10 @@ public class SentinelTest {
 ```
 
 Im Ergebnis haben wir hiermit die Klasse `Sentinel` komplett isoliert, das heißt unabhängig von anderen Abhängigkeiten,
-testen können. Der originale `WindCheck` und der originale `TrayReport` können sich ändern, wie sie wollen, aber der
-Sentinel kann immer getestet und damit seine Fehlerfreiheit bewiesen werden, weil der Prozess, den er implementiert, nur
-von den entsprechenden Abstraktionen dieser Klassen abhängig ist, aber nicht von den konkreten Implementierungen,
-nämlich den Klassen selbst.
+testen können. Der originale `WindCheck` und der originale `TrayReport` können sich jetzt ändern, wie sie wollen; der
+`Sentinel` kann trotzdem immer getestet und damit seine Fehlerfreiheit bewiesen werden, weil der Prozess, den er
+implementiert, nur von den entsprechenden Abstraktionen dieser Klassen abhängig ist, aber nicht von den konkreten
+Implementierungen, nämlich den Klassen selbst.
 
 Noch zwei Anmerkungen zum Test:
 
@@ -616,30 +703,30 @@ Noch zwei Anmerkungen zum Test:
    Prozess korrekt durchlaufen wird – dass der Datenfluss stimmt: Die Windgeschwindigkeit muss vom `WeatherOracle` zum
    `WeatherCheck` gehen und das daraus resultierende Checkergebnis zum `WeatherReport`. Man könnte zwei Tests erstellen,
    aber das wäre im Großen und Ganzen eine Codeduplizierung und schlichtweg unnötig.
-2. Man könnte argumentieren, dass der Test Interna, also Implementierungsdetails des Sentinels, testet. Das ist auch
+2. Man könnte argumentieren, dass der Test Interna, also Implementierungsdetails des `Sentinel` testet. Das ist auch
    nicht direkt von der Hand zu weisen, da sich der Test anpassen müsste, wenn sich die Struktur des Prozesses ändert.
-   Aber: Bei einem Orchestrator wie der Sentinel-Klasse ist die Struktur das Verhalten. Der Test prüft nicht die private
-   Mechanik, sondern die Einhaltung des Protokolls. Er stellt sicher, dass der Sentinel sein Versprechen einlöst, als
-   Bindeglied zwischen Wetterdaten, Logik und Ausgabe zu fungieren.
+   Aber: Bei einem Orchestrator wie der `Sentinel`-Klasse ist die Struktur das Verhalten. Der Test prüft nicht die
+   private Mechanik, sondern die Einhaltung des Protokolls. Er stellt sicher, dass der `Sentinel` sein Versprechen
+   einlöst, als Bindeglied zwischen Wetterdaten, Logik und Ausgabe zu fungieren.
 
 Sie haben nun also verstanden, warum Dependency Inversion ein wichtiges Prinzip ist, das es einzuhalten gilt. Allein
 durch Dependency Inversion werden Module erst (unit-)testbar. Und natürlich konnten die Abhängigkeiten nur identifiziert
 und abstrahiert werden, weil wir zuvor das Single-Responsibility-Prinzip umgesetzt haben.
 
 Noch eine letzte Anmerkung zum DIP: Es geht nicht darum, jede Abhängigkeit auszutauschen. Feste Abhängigkeiten zu
-stabilen Modulen dürfen bestehen (z. B. Java-Core-Klassen, Unit-Test-Frameworks, Logging-Frameworks), aber trotzdem ist
-Vorsicht geboten, denn auch eine als stabil erachtete Abhängigkeit könnte irgendwann zwangsweise zu ersetzen sein.  
-Im Dezember 2021 wurde eine Sicherheitslücke beim weitverbreiteten Protokollierungsframework Log4j aufgedeckt, unter
-deren Ausnutzung es möglich war, eigenen (schädlichen) Code auf einem fremden Server auszuführen. Wurde Log4j ohne
+stabilen Modulen dürfen bestehen (z. B. `Java-Core`-Klassen, Unit-Test-Frameworks, Logging-Frameworks), aber trotzdem
+ist Vorsicht geboten, denn auch eine als stabil erachtete Abhängigkeit könnte irgendwann zwangsweise zu ersetzen sein.  
+Im Dezember 2021 wurde eine Sicherheitslücke beim weitverbreiteten Protokollierungsframework `Log4j` aufgedeckt, unter
+deren Ausnutzung es möglich war, eigenen (schädlichen) Code auf einem fremden Server auszuführen. Wurde `Log4j` ohne
 Abstrahierung eingebunden, war das System potenziell gefährdet. Eine Nutzung des DIP (Dependency Inversion Principle)
 hilft natürlich nicht gegen die Sicherheitslücke selbst, jedoch wäre die Protokollierungslösung dadurch relativ einfach
-austauschbar gewesen. Typischerweise kann die Protokollierung über SLF4J abstrahiert werden. Diese Abstrahierung geht
+austauschbar gewesen. Typischerweise kann die Protokollierung über `SLF4J` abstrahiert werden. Diese Abstrahierung geht
 aber mit dem zwangsweisen Verzicht auf frameworkspezifische Features einher.
 
-Übrigens: Haben Sie die unschöne Implementierung des `WeatherOracle`-Stubs gesehen? Drei Methoden werfen eine
-`UnsupportedOperationException`. Im Unittest ist das in Ordnung, da wir die Methoden nie rufen, aber implementieren
-müssen. Tatsächlich ist dies jedoch ein Verstoß gegen die liskovsche Regel oder in SOLID-Termen: das
-Liskov-Substitution-Prinzip. Das wird uns noch Probleme bereiten, aber darauf kommen wir noch zu sprechen.
+Übrigens: Haben Sie ein schlechtes Gefühl bei der unschönen Implementierung des `WeatherOracle`-Stubs gehabt? Drei
+Methoden werfen eine `UnsupportedOperationException`. Im Unittest ist das in Ordnung, da wir die Methoden nie rufen,
+aber implementieren müssen. Tatsächlich ist dies jedoch ein Verstoß gegen die Liskovsche Regel oder in SOLID-Termen: das
+Liskov-Substitutionsprinzip. Das wird uns noch Probleme bereiten, aber darauf kommen wir noch zu sprechen.
 
 Zunächst geht es mit dem Open-Closed-Prinzip weiter.
 
