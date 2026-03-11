@@ -9,11 +9,11 @@ Dependency-Inversion-Prinzip und dem Open-Closed-Prinzip, angepasst haben.
 
 Der Plan ist einfach:
 
-1. Der neue Wetterdienst PalantAir muss als ManagedDependency in die Root-POM aufgenommen werden.
+1. Der neue Wetterdienst `PalantAir` muss als ManagedDependency in die Root-POM aufgenommen werden.
 2. Danach muss die Dependency in der Modul-POM eingebunden werden.
-3. Composition Root muss den neuen Wetterservice instanziieren und in den Sentinel geben.
+3. Composition Root muss den neuen Wetterservice instanziieren und in den `Sentinel` geben.
 
-Das alles soll ohne Anpassung im Sentinel-Sourcecode möglich sein (entsprechend dem Open-Closed-Prinzip).
+Das alles soll ohne Anpassung im `Sentinel`-Sourcecode möglich sein (entsprechend dem Open-Closed-Prinzip).
 
 **Machen Sie es so!**
 
@@ -21,7 +21,7 @@ Das alles soll ohne Anpassung im Sentinel-Sourcecode möglich sein (entsprechend
 
 Die Lösung findet sich in Modul `version5`. Die ersten beiden Schritte sind trivial:
 
-Einbindung des PalantAir in die Root-POM als Managed Dependency:
+Einbindung des `PalantAir` in die Root-POM als Managed Dependency:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -77,20 +77,25 @@ Und die Einbindung in der modulspezifischen POM:
 </project>
 ```
 
-Der dritte Schritt wird etwas komplexer, denn wir stellen schnell fest, dass wir zwar die Implementierung des PalantAir
-problemlos über eine mitgelieferte Factory bekommen können, diese aber gar nicht in den Sentinel übergeben können, weil
-er einen anderen Typ erwartet, nämlich ein WeatherOracle. Wir haben aber einen PalantAir. Wir müssen den PalantAir also
-an die WeatherOracle-Schnittstelle anpassen oder eben adaptieren. Das induziert die Lösungsstrategie: Ein Adapter,
+Der dritte Schritt wird etwas komplexer, denn wir stellen schnell fest, dass wir zwar die Implementierung des
+`PalantAir`
+problemlos über eine mitgelieferte `PalantAirFactory` bekommen können, diese aber gar nicht in den `Sentinel` übergeben
+können, weil
+er einen anderen Typ erwartet, nämlich ein `WeatherOracle`. Wir haben aber einen `PalantAir`. Wir müssen den `PalantAir`
+also
+an die `WeatherOracle`-Schnittstelle anpassen oder eben adaptieren. Das induziert die Lösungsstrategie: Ein `Adapter`,
 ähnlich wie bei Ladekabeln, der etwa USB-A nach USB-C adaptiert. Als Name wählen wir
-`PalantAir2WeatherOracleAdapter`. Dieser Adapter muss die Schnittstelle des WeatherOracles implementieren, womit er
-kompatibel ist und vom Sentinel benutzt werden kann. Aber intern leitet der Adapter alle Anfragen an die
-WeatherOracle-Schnittstelle einfach an eine PalantAir-Implementierung weiter. Das nennt sich Delegation. Die originale
-PalantAir-Implementierung wird dem Adapter per Constructor-Injection entsprechend dem Dependency-Inversion-Prinzip
+`PalantAir2WeatherOracleAdapter`. Dieser `Adapter` muss die Schnittstelle des `WeatherOracle` implementieren, womit er
+kompatibel ist und vom `Sentinel` benutzt werden kann. Aber intern leitet der `Adapter` alle Anfragen an die
+`WeatherOracle`-Schnittstelle einfach an eine `PalantAir`-Implementierung weiter. Das nennt sich Delegation. Die
+originale
+`PalantAir`-Implementierung wird dem `Adapter` per `Constructor-Injection` entsprechend dem Dependency-Inversion-Prinzip
 eingeimpft. Die Lösung ist also eine Kombination aus Adapter und Delegator, zwei wohlbekannten und oft benutzten Design
 Patterns, die zum Werkzeugsatz eines halbwegs brauchbaren Entwicklers gehören sollten.
 
-Im auf das Wesentliche reduzierte Klassendiagramm wird das Konzept deutlicher und dass der Adapter als Mittler zwischen
-der erwarteten Schnittstelle und der andersgearteten Implementierung (dem Palantir) agiert.
+Im auf das Wesentliche reduzierte Klassendiagramm wird das Konzept deutlicher und dass der `Adapter` als Mittler
+zwischen
+der erwarteten Schnittstelle und der andersgearteten Implementierung (dem `Palantir`) agiert.
 
 ```plantuml
 @startuml
@@ -165,13 +170,14 @@ public class PalantAir2WeatherOracleAdapter implements WeatherOracle {
 }
 ```
 
-Aber der Adapter hat offenbar zwei Probleme, nämlich die Methoden getHumidity und getPrecipitation, die beide vom
-WeatherOracle bereitgestellt werden, aber nicht vom PalantAir. Damit wir die Lösung zunächst zum Laufen bringen, machen
+Aber der `Adapter` hat offenbar zwei Probleme, nämlich die Methoden `getHumidity` und `getPrecipitation`, die beide vom
+`WeatherOracle` bereitgestellt werden, aber nicht vom `PalantAir`. Damit wir die Lösung zunächst zum Laufen bringen,
+machen
 wir daraus das Problem unseres zukünftigen Selbst und vertagen dieses. Keine Sorge, die Besprechung ist der
-Hauptteil dieses Kapitels. Für den Moment begnügen wir uns mit einer UnsupportedOperationException.
+Hauptteil dieses Kapitels. Für den Moment begnügen wir uns mit einer `UnsupportedOperationException`.
 
-Der PalantAir kann mithilfe des Adapters an den Sentinel angeschlossen werden und wir können Punkt 3 der
-Lösungsstrategie umsetzen und den Composition Root, also die Main-Klasse, anpassen:
+Der `PalantAir` kann mithilfe des `Adapter` an den `Sentinel` angeschlossen werden und wir können Punkt 3 der
+Lösungsstrategie umsetzen und den Composition Root (die `Main`-Klasse) anpassen:
 
 ```java
 public class Main {
@@ -190,13 +196,13 @@ public class Main {
     var sentinel = new Sentinel(
       palantAir2WeatherOracleAdapter,
       new TrayReport( ),
-      List.of( ) );
+      List.of( new WindCheck( ), new TemperatureCheck( ), new WindAndFrostCheck( ) ) );
     sentinel.run( );
   }
 }
 ```
 
-Letztlich malen wir dazu noch ein Sequenzdiagramm, um den Delegationsfluss besser aufzuzeigen:
+Letztlich malen wir dazu noch ein Sequenzdiagramm, um den Einsatz des Adapters und die Delegation besser aufzuzeigen:
 
 ```plantuml
 @startuml
@@ -209,7 +215,7 @@ activate Main
     ' Initialisierung (Composition Root)
     Main -> PalantAir : <<create>>
     Main -> Adapter : <<create>>(palantAir)
-    Main -> Sentinel : <<create>>(adapter)
+    Main -> Sentinel : <<create>>(adapter, ...)
     
     ' Ausführung
     Main -> Sentinel : run()
@@ -240,12 +246,13 @@ deactivate Main
 
 ### Das Problem mit der Austauschbarkeit
 
-Um nun langsam zum Hauptteil des Kapitels überzuleiten, müssen wir uns den Adapter noch einmal anschauen. Was macht der
-noch einmal? Genau, er implementiert die WeatherOracle-Schnittstelle, aber eben nicht vollständig. Zwei Methoden können
-aktuell nicht benutzt werden, denn ihre Benutzung würde zu einer RuntimeException führen, die, nicht abgefangen, im
-Programmabbruch münden würde. Sie könnte auch nicht abgefangen werden, da der Benutzer (der Sentinel in dem Fall) gar
-nicht erwartet, dass eine Exception geworfen werden könnte, wenn er das WeatherOracle doch entsprechend seines Vertrages
-benutzt. Und genau deshalb ist dies ein Verstoß gegen das Liskovsche Substitutionsprinzip:
+Um nun langsam zum angekündigten Hauptteil des Kapitels überzuleiten, müssen wir uns den `Adapter` noch einmal
+anschauen. Was macht der noch einmal? Genau, er implementiert die `WeatherOracle`-Schnittstelle, aber eben nicht
+vollständig. Zwei Methoden können aktuell nicht benutzt werden, denn ihre Benutzung würde zu einer
+`UnsupportedOperationException` (eine `RuntimeException`) führen, die, nicht abgefangen, im Programmabbruch münden
+würde. Sie könnte auch nicht abgefangen werden, da der Benutzer (der `Sentinel` in dem Fall) gar nicht erwartet, dass
+eine `Exception` geworfen werden könnte, wenn er das `WeatherOracle` doch entsprechend seines Vertrages benutzt. Und
+genau deshalb ist dies ein Verstoß gegen das Liskovsche Substitutionsprinzip:
 
 Benannt wurde das Prinzip nach Barbara Liskov, Berkeley-Absolventin, eine der ersten weiblichen Doktoren der
 Informatik (Stanford), Professorin am MIT und Turingpreisträgerin, die es 1987 zuerst formulierte. Formal besagt es:
@@ -293,26 +300,30 @@ Das LSP stellt Anforderungen syntaktischer (an die Signaturen) und verhaltenstec
        Bedeutet, dass eine Subklasse die logischen Grundregeln der Basisklasse akzeptieren und befolgen muss. Hierfür
        gibt es ein Lehrbuchbeispiel: In der Geometrie ist ein Quadrat eine besondere Form des Rechtecks. In der
        Informatik eventuell nicht, insbesondere dann, wenn die Seitenlängen angepasst werden können. Im Rechteck ist die
-       Erwartung, dass sich entweder Länge oder Breite ändern lassen, und zwar unabhängig voneinander. Im Quadrat
+       Erwartung, dass sich entweder `setLength()` oder `setWidth()` ändern lassen, und zwar unabhängig voneinander. Im
+       Quadrat
        bedingt
        die Änderung des einen Werts automatisch das Nachziehen des anderen.
 
-**Wo liegt nun also das Problem mit dem Adapter und der WeatherOracle-Schnittstelle?**
+**Wo liegt nun also das Problem mit dem `Adapter` und der `WeatherOracle`-Schnittstelle?**
 
-Signaturbedingt wird eine neue Exception geworfen, allerdings handelt es sich um eine UncheckedException, also eine
-Laufzeitausnahme. Diese kann grundsätzlich von allen Methoden geworfen werden, wie eine NullPointerException. Ein
+Signaturbedingt wird eine neue Exception geworfen, allerdings handelt es sich um eine `UncheckedException` (eine
+Laufzeitausnahme). Diese kann grundsätzlich von allen Methoden geworfen werden, wie eine `NullPointerException`. Ein
 Verstoß gegen die Signatur liegt hier also formal nicht vor.  
-Jedoch liegt der Verstoß im Verhalten. Dem Sentinel wird versprochen, dass er einen Wetterservice übergeben bekommt, der
-genau vier Daten liefern kann: Temperatur, Windgeschwindigkeit, Niederschlag und Luftfeuchtigkeit. Durch die Nutzung des
-PalantAir-Services ist dieser Vertrag nicht mehr erfüllt; stattdessen wird eine Exception geworfen, wenn
-Luftfeuchtigkeit oder Niederschlag abgefragt werden. Das bedeutet, die Klasse bzw. die beiden Methoden erzeugen einen
+Jedoch liegt der Verstoß im Verhalten. Dem `Sentinel` wird versprochen, dass er einen Wetterservice übergeben bekommt,
+der
+genau vier Daten liefern kann: `getTemperature()`, `getWind()`, `getPrecipitation()` und `getHumidity()`. Durch die
+Nutzung des
+`PalantAir`-Services ist dieser Vertrag nicht mehr erfüllt; stattdessen wird eine Exception geworfen, wenn
+`getHumidity()` oder `getPrecipitation()` abgefragt werden. Das bedeutet, die Klasse bzw. die beiden Methoden erzeugen
+einen
 Status, mit dem der Client nicht rechnet. Damit handelt es sich um eine Abschwächung der Nachbedingungen. Denn anstelle
-des Versprechens der Schnittstelle "Du bekommst eine Zahl" sagt der Adapter "Du bekommst eine Zahl - oder auch nicht".
+des Versprechens der Schnittstelle "Du bekommst eine Zahl" sagt der `Adapter` "Du bekommst eine Zahl - oder auch nicht".
 
 Rein pragmatisch kann man hier mit diesem Verhalten leben, da wir volle Kontrolle über die gesamte Applikation haben.
 Wir können also wissen, was zu erwarten ist und darauf irgendwie reagieren. Ein von Pragmatismus geprägter Ansatz. So
 lang nicht eine Anforderung von Elon Bezos gestellt wird, dass die Luftfeuchtigkeit oder Niederschlag berücksichtigt
-wird, gibt es kein Problem. Falls er doch irgendwann damit um die Ecke kommt, ist PalantAir nicht länger geeignet als
+wird, gibt es kein Problem. Falls er doch irgendwann damit um die Ecke kommt, ist `PalantAir` nicht länger geeignet als
 Wetterservice der Wahl.
 In der Realität ist ein solch pragmatischer Ansatz oft nicht der Fall, insbesondere bei vielen möglichen
 Implementierungen zu einer Schnittstelle (nehmen wir SLF4J als Beispiel). Hier muss sichergestellt werden, dass auch das
@@ -322,9 +333,11 @@ Eine Lösung für unser Problem erfordert leider ein erneutes und dann auch letz
 Schnittstelle muss spezifischer werden, das heißt schmaler. Und das machen wir unter Betrachtung des
 Interface-Segregation-Prinzips, das wir uns im nächsten Kapitel vornehmen.
 
-p.s. Ein weiteres Problem der aktuellen Applikation ist natürlich der Aufbau auf dem WeatherOracle, eine Bibliothek, die
+p.s. Ein weiteres Problem der aktuellen Applikation ist natürlich der Aufbau auf dem `WeatherOracle`, eine Bibliothek,
+die
 Elon Bezos nicht bezahlen will. Das bedeutet in aller Regel aber auch, dass er sie nicht weiter verwenden darf. Doch
-genau das ist in der aktuellen Sentinel-Implementierung der Fall: Die Schnittstelle WeatherOracle ist bei uns verbaut,
+genau das ist in der aktuellen `Sentinel`-Implementierung der Fall: Die Schnittstelle `WeatherOracle` ist bei uns
+verbaut,
 ein potenziell kostspieliger Designfehler. Glücklicherweise können wir die Abhängigkeit nach der nächsten Änderung auch
 entsorgen.
 

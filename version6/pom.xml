@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>version5</artifactId>
+    <artifactId>version6</artifactId>
 
     <dependencies>
         <dependency>
